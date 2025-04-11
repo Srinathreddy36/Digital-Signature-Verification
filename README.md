@@ -54,9 +54,3 @@ Hashes the file using SHA-256
 Verifies that the original file hasn’t been changed
 
 ---
-
-Would you like me to:
-- Save this `README.md` in your local project folder,  
-- Commit & push it to GitHub for you?
-
-Let me know 💪
