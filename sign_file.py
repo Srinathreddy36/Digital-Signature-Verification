@@ -1,33 +1,43 @@
-# sign_file.py
-import hashlib
-from Crypto.PublicKey import RSA
-from Crypto.Signature import pkcs1_15
-from Crypto.Hash import SHA256
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+import os
 
-# Step 1: Read the file to be signed
+# Step 1: Load the file to be signed
 file_path = "agreement.pdf"
-with open(file_path, 'rb') as f:
-    message = f.read()
+with open(file_path, "rb") as f:
+    file_data = f.read()
 
-# Step 2: Create SHA-256 hash of the message
-hash_obj = SHA256.new(message)
+# Step 2: Generate RSA key pair
+private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+public_key = private_key.public_key()
 
-# Step 3: Generate RSA private-public key pair
-key = RSA.generate(2048)
-private_key = key.export_key()
-public_key = key.publickey().export_key()
+# Step 3: Sign the file
+signature = private_key.sign(
+    file_data,
+    padding.PSS(
+        mgf=padding.MGF1(hashes.SHA256()),
+        salt_length=padding.PSS.MAX_LENGTH
+    ),
+    hashes.SHA256()
+)
 
-# Step 4: Sign the hash with the private key
-signature = pkcs1_15.new(key).sign(hash_obj)
-
-# Step 5: Save the signature, public key, and original file (if needed)
-with open("signature.sig", 'wb') as sig_file:
+# Step 4: Save the signature
+with open("signature.sig", "wb") as sig_file:
     sig_file.write(signature)
 
-with open("public.pem", 'wb') as pub_file:
-    pub_file.write(public_key)
+# Step 5: Save the public key
+with open("public.pem", "wb") as pub_file:
+    pub_file.write(public_key.public_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PublicFormat.SubjectPublicKeyInfo
+    ))
 
-with open("private.pem", 'wb') as priv_file:
-    priv_file.write(private_key)
+# Step 6: Save the private key (⚠️ do NOT share this file publicly)
+with open("private.pem", "wb") as priv_file:
+    priv_file.write(private_key.private_bytes(
+        encoding=serialization.Encoding.PEM,
+        format=serialization.PrivateFormat.TraditionalOpenSSL,
+        encryption_algorithm=serialization.NoEncryption()
+    ))
 
-print("Signature and keys generated successfully.")
+print("✅ Signature and keys generated successfully!")
